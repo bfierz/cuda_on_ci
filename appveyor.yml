@@ -1,0 +1,60 @@
+version: "{build}"
+
+platform: 
+  - amd64
+
+configuration:
+  - Debug
+
+environment:
+  global:
+    MSVC_DEFAULT_OPTIONS: ON
+
+  matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+
+branches:
+  only:
+    - master
+
+init:
+
+install:
+  - ps: |
+      function Update-Environment {
+        $locations = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
+                     'HKCU:\Environment'
+        $locations | ForEach-Object {
+          $k = Get-Item $_
+          $k.GetValueNames() | ForEach-Object {
+            $name  = $_
+            $value = $k.GetValue($_)
+
+            if ($userLocation -and $name -ieq 'PATH') {
+              $env:path += ";$value"
+            } else {
+              Set-Item -Path Env:\$name -Value $value
+            }
+          }
+          $userLocation = $true
+        }
+      }
+      appveyor DownloadFile http://developer.download.nvidia.com/compute/cuda/11.0.3/network_installers/cuda_11.0.3_win10_network.exe -FileName cuda_11.0.3_win10_network.exe
+      Start-Process .\cuda_11.0.3_win10_network.exe -ArgumentList "/s nvcc_11.0 cudart_11.0 visual_studio_integration_11.0" -NoNewWindow -Wait
+      Update-Environment
+
+build_script:
+  - ps: |
+      mkdir build
+      pushd build
+      cmake ..
+      cmake --build .
+      popd
+
+test_script:
+  - ps: |
+      if (!(Test-Path build\Debug\CMakeCUDA.exe)) { Exit 1 }
+
+on_finish:
+  # Tap in for debug CMake problems
+  #- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))

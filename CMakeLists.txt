@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.8)
+project(CMakeCUDA CUDA CXX)
+
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CXX_STANDARD_REQUIRED True)
+endif()
+
+if(NOT DEFINED CMAKE_CUDA_STANDARD)
+    set(CMAKE_CUDA_STANDARD 11)
+    set(CMAKE_CUDA_STANDARD_REQUIRED True)
+endif()
+
+add_executable(CMakeCUDA main.cpp vectorAdd.cu)
+set_target_properties(CMakeCUDA
+    PROPERTIES
+        CUDA_SEPERABLE_COMPILATION ON
+        POSITION_INDEPENDENT_CODE ON
+        CUDA_ARCHITECTURES 61
+)
